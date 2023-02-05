@@ -21,19 +21,56 @@
 //--------------------------------------------------------------------------------------------
 // Variable declaration
 class Madgwick{
+public:
+// Helper types for orientation return
+    struct OrientationQuat {
+        float x{0.f};  // Often called q1
+        float y{0.f};  // Often called q2
+        float z{0.f};  // Often called q3
+        float w{1.f};  // Often called q0
+        void normalize()
+        {
+            const float recipNorm = invSqrt(w * w + x * x + y * y + z * z);
+	        w *= recipNorm;
+	        x *= recipNorm;
+	        y *= recipNorm;
+	        z *= recipNorm;
+        }
+    };
+
+    struct OrientationRPY {
+        const float roll;
+        const float pitch;
+        const float yaw;
+
+        OrientationRPY() = delete;
+        OrientationRPY(const OrientationQuat& q) :
+            roll{atan2f(q.w*q.x + q.y*q.z, 0.5f - q.x*q.x - q.y*q.y)},
+	        pitch{asinf(-2.0f * (q.x*q.z - q.w*q.y))},
+	        yaw{atan2f(q.x*q.y + q.w*q.z, 0.5f - q.y*q.y - q.z*q.z)}
+        {}
+        OrientationRPY(const float r, const float p, const float y):
+            roll{r}, pitch{p}, yaw{y}
+        {}
+    };
 private:
-    static float invSqrt(float x);
+    static const float radToDeg = 57.29578f;
     float beta;				// algorithm gain
-    float q0;
-    float q1;
-    float q2;
-    float q3;	// quaternion of sensor frame relative to auxiliary frame
     float invSampleFreq;
-    float roll;
-    float pitch;
-    float yaw;
-    char anglesComputed;
-    void computeAngles();
+    OrientationQuat quat;
+
+    static inline float Madgwick::invSqrt(float x) {
+        // Fast inverse square-root
+        // See: http://en.wikipedia.org/wiki/Fast_inverse_square_root
+        float halfx = 0.5f * x;
+        float y = x;
+        long i = *(long*)&y;
+        i = 0x5f3759df - (i>>1);
+        y = *(float*)&i;
+        y = y * (1.5f - (halfx * y * y));
+        y = y * (1.5f - (halfx * y * y));
+        return y;
+    }
 
 //-------------------------------------------------------------------------------------------
 // Function declarations
@@ -42,33 +79,18 @@ public:
     void begin(float sampleFrequency) { invSampleFreq = 1.0f / sampleFrequency; }
     void update(float gx, float gy, float gz, float ax, float ay, float az, float mx, float my, float mz);
     void updateIMU(float gx, float gy, float gz, float ax, float ay, float az);
-    //float getPitch(){return atan2f(2.0f * q2 * q3 - 2.0f * q0 * q1, 2.0f * q0 * q0 + 2.0f * q3 * q3 - 1.0f);};
-    //float getRoll(){return -1.0f * asinf(2.0f * q1 * q3 + 2.0f * q0 * q2);};
-    //float getYaw(){return atan2f(2.0f * q1 * q2 - 2.0f * q0 * q3, 2.0f * q0 * q0 + 2.0f * q1 * q1 - 1.0f);};
-    float getRoll() {
-        if (!anglesComputed) computeAngles();
-        return roll * 57.29578f;
+    OrientationRPY getOrientationRPY(const bool deg = false)
+    {
+        static const float radToDeg = 57.29578f;
+        const OrientationRPY rpyRad = OrientationRPY(quat);
+        if (deg) {
+            return OrientationRPY(rpyRad.roll * radToDeg, rpyRad.pitch * radToDeg, rpyRad.yaw * radToDeg);
+        }
+        return rpyRad;
     }
-    float getPitch() {
-        if (!anglesComputed) computeAngles();
-        return pitch * 57.29578f;
-    }
-    float getYaw() {
-        if (!anglesComputed) computeAngles();
-        return yaw * 57.29578f + 180.0f;
-    }
-    float getRollRadians() {
-        if (!anglesComputed) computeAngles();
-        return roll;
-    }
-    float getPitchRadians() {
-        if (!anglesComputed) computeAngles();
-        return pitch;
-    }
-    float getYawRadians() {
-        if (!anglesComputed) computeAngles();
-        return yaw;
+    OrientationQuat getOrientationQuat()
+    {
+        return quat;
     }
 };
 #endif
-
