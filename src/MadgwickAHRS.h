@@ -54,12 +54,12 @@ public:
         {}
     };
 private:
-    static const float radToDeg = 57.29578f;
+    static constexpr float radToDeg = 57.29578f;
     float beta;				// algorithm gain
     float invSampleFreq;
     OrientationQuat quat;
 
-    static inline float Madgwick::invSqrt(float x) {
+    static inline float invSqrt(float x) {
         // Fast inverse square-root
         // See: http://en.wikipedia.org/wiki/Fast_inverse_square_root
         float halfx = 0.5f * x;
