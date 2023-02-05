@@ -212,9 +212,5 @@ void Madgwick::updateIMU(float gx, float gy, float gz, float ax, float ay, float
 	quat.z += qDot4 * invSampleFreq;
 
 	// Normalise quaternion
-	recipNorm = invSqrt(quat.w * quat.w + quat.x * quat.x + quat.y * quat.y + quat.z * quat.z);
-	quat.w *= recipNorm;
-	quat.x *= recipNorm;
-	quat.y *= recipNorm;
-	quat.z *= recipNorm;
+	quat.normalize();
 }
