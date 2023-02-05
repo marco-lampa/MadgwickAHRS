@@ -69,6 +69,18 @@ public:
         if (!anglesComputed) computeAngles();
         return yaw;
     }
+    float getQuatW() {
+        return q0;
+    }
+    float getQuatX() {
+        return q1;
+    }
+    float getQuatY() {
+        return q2;
+    }
+    float getQuatZ() {
+        return q3;
+    }
 };
 #endif
 
